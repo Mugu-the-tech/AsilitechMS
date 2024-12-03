@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import { Plus, Trash2, Save, Check, X } from 'lucide-react';
 import axios from 'axios';
 import {
@@ -202,16 +202,6 @@ const NewSaleForm = () => {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const response = await axios.patch(
-        `${API_BASE_URL}/sales/${saleId}/status`, 
-        { status }, 
-        {
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
 
       setSaleStatus(status);
       setSuccess(`Sale ${status.toLowerCase()} successfully`);

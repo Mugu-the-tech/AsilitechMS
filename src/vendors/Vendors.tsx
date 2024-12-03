@@ -61,7 +61,7 @@ const VendorTable: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [currentOrganizationId, setCurrentOrganizationId] = useState<string>('');
+  const [, setCurrentOrganizationId] = useState<string>('');
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [vendorTypeFilter, setVendorTypeFilter] = useState<string>('ALL');

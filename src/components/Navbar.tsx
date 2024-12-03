@@ -1,4 +1,4 @@
-import React, { useState,   useEffect } from "react"
+import  { useState,   useEffect } from "react"
 import { ArrowBigDownDashIcon, User, Sun, Moon } from "lucide-react"
 import { BellAlertIcon } from "@heroicons/react/24/outline";
 
