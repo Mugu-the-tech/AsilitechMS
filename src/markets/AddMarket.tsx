@@ -16,7 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
-
+import dotenv from "dotenv";
 interface MarketFormData {
   marketName: string;
   marketCode: string;
@@ -42,7 +42,10 @@ const AddMarketComponent: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
 
-  const API_BASE_URL = 'http://localhost:3000';
+  dotenv.config();
+
+  // Use BACKEND_URL from .env, fallback to localhost if not set
+   const API_BASE_URL = process.env.BACKEND_URL || 'http://localhost:3000'; 
   const API_ENDPOINTS = {
     markets: '/markets'
   };

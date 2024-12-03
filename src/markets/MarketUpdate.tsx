@@ -17,7 +17,7 @@ import { format, parseISO, isValid } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Market } from '../types/interfaces';
-
+import dotenv from "dotenv";
 const MarketUpdatePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -38,8 +38,10 @@ const MarketUpdatePage: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [openingDate, setOpeningDate] = useState<Date | undefined>();
   const [lastOpenDate, setLastOpenDate] = useState<Date | undefined>();
+  dotenv.config();
 
-  const API_BASE_URL = 'http://localhost:3000';
+  // Use BACKEND_URL from .env, fallback to localhost if not set
+   const API_BASE_URL = process.env.BACKEND_URL || 'http://localhost:3000'; 
   const API_ENDPOINTS = {
     markets: '/market'
   };

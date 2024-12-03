@@ -28,7 +28,7 @@ import {
 } from "../components/ui/table";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Market, Client, SaleHeader, Crop, SaleLine } from '../types/interfaces';
-
+import dotenv from "dotenv";
 interface Organization {
   id: string;
   name: string;
@@ -62,7 +62,10 @@ const NewSaleForm = () => {
 
   const [saleLines, setSaleLines] = useState<SaleLine[]>([]);
   
-  const API_BASE_URL = 'http://localhost:3000';
+  dotenv.config();
+
+  // Use BACKEND_URL from .env, fallback to localhost if not set
+   const API_BASE_URL = process.env.BACKEND_URL || 'http://localhost:3000'; 
 
   useEffect(() => {
     // Get and validate organization data from localStorage

@@ -17,7 +17,7 @@ import {
 } from '../components/ui/select';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { useParams, useNavigate } from 'react-router-dom';
-
+import dotenv from "dotenv";
 // Vendor Type options
 const VENDOR_TYPES = [
   'SUPPLIER',
@@ -56,7 +56,10 @@ const VendorUpdatePage: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
 
-  const API_BASE_URL = 'http://localhost:3000';
+  dotenv.config();
+
+  // Use BACKEND_URL from .env, fallback to localhost if not set
+   const API_BASE_URL = process.env.BACKEND_URL || 'http://localhost:3000'; 
   const API_ENDPOINTS = {
     vendors: '/vendors'
   };
