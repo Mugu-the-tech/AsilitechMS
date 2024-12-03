@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
-import dotenv from "dotenv";
+
 interface LoginDto {
   email: string;
   password: string;
@@ -27,7 +27,7 @@ interface AuthResponse {
     role: string;
   };
 }
-dotenv.config();
+
 export class AuthService {
   
   private static API_BASE_URL =  import.meta.env.VITE_BACKEND_URL  || 'http://localhost:3000'; 
