@@ -1,4 +1,4 @@
-import React, { useState, FormEvent, useContext } from 'react';
+import  { useState, FormEvent, useContext } from 'react';
 import { Mail, LockOpen, Building, Hash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../routes/AuthContext';

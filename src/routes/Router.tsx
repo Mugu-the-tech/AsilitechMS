@@ -12,8 +12,9 @@ import VendorTable from '../vendors/Vendors';
 import VendorUpdatePage from '../vendors/VendorUpdate';
 import AddMarketComponent from '../markets/AddMarket';
 import MarketTable from '../markets/Market';
-import CustomerTable from '../customers/customers';
+
 import MarketUpdatePage from '../markets/MarketUpdate';
+import CustomerTable from '../customers/Customers';
 
 const RouterPage = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
