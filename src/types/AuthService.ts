@@ -30,7 +30,7 @@ interface AuthResponse {
 dotenv.config();
 export class AuthService {
   
-  private static API_BASE_URL = process.env.BACKEND_URL || 'http://localhost:3000'; 
+  private static API_BASE_URL =  import.meta.env.VITE_BACKEND_URL  || 'http://localhost:3000'; 
   
   public static api = axios.create({
     baseURL: AuthService.API_BASE_URL,
