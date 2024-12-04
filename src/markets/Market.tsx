@@ -28,7 +28,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
  import { Market } from '../types/interfaces';
- import dotenv from 'dotenv';
+
 const MarketTable:React.FC = () => {
 
     const [markets,setMarkets] = useState<Market[]>([]);
@@ -40,7 +40,6 @@ const MarketTable:React.FC = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
-    dotenv.config();
 
    // Use BACKEND_URL from .env, fallback to localhost if not set
     const API_BASE_URL =  import.meta.env.VITE_BACKEND_URL  || 'http://localhost:3000'; 

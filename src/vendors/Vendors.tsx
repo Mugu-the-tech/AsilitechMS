@@ -33,7 +33,7 @@ import {
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
-import dotenv from "dotenv";
+
 // Define Vendor interface
 interface Vendor {
   id: string;
@@ -66,7 +66,7 @@ const VendorTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [vendorTypeFilter, setVendorTypeFilter] = useState<string>('ALL');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
-  dotenv.config();
+
 
   // Use BACKEND_URL from .env, fallback to localhost if not set
    const API_BASE_URL =  import.meta.env.VITE_BACKEND_URL  || 'http://localhost:3000';  

@@ -25,7 +25,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '../components/ui/select';
-import dotenv from "dotenv";
+
 // Vendor Type options matching backend expectations
 const VENDOR_TYPES = [
   'SUPPLIER',
@@ -59,7 +59,7 @@ const AddVendorComponent: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  dotenv.config();
+
 
   // Use BACKEND_URL from .env, fallback to localhost if not set
    const API_BASE_URL =  import.meta.env.VITE_BACKEND_URL  || 'http://localhost:3000'; 

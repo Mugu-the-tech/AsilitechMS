@@ -33,7 +33,6 @@ import {
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
-import dotenv from "dotenv";
 // Client Interface (copied from your provided interface)
 interface Client {
   id: string;
@@ -66,8 +65,6 @@ const CustomerTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [customerStatusFilter, setCustomerStatusFilter] = useState<string>('ALL');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
-  dotenv.config();
-
   // Use BACKEND_URL from .env, fallback to localhost if not set
    const API_BASE_URL =  import.meta.env.VITE_BACKEND_URL  || 'http://localhost:3000'; 
   const API_ENDPOINTS = {
