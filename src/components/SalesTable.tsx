@@ -35,7 +35,7 @@ import {
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { toast } from '../hooks/use-toast';
-import dotenv from 'dotenv'
+
 // Define Sale interface
 interface SalesLine {
   id: string;
@@ -79,7 +79,7 @@ const SalesDashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [saleStatusFilter, setSaleStatusFilter] = useState<string>('ALL');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
-  dotenv.config();
+
 
   // Use BACKEND_URL from .env, fallback to localhost if not set
    const API_BASE_URL =  import.meta.env.VITE_BACKEND_URL  || 'http://localhost:3000';   
