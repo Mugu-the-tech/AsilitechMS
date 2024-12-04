@@ -69,7 +69,7 @@ const CustomerTable: React.FC = () => {
   dotenv.config();
 
   // Use BACKEND_URL from .env, fallback to localhost if not set
-   const API_BASE_URL = process.env.BACKEND_URL || 'http://localhost:3000'; 
+   const API_BASE_URL =  import.meta.env.VITE_BACKEND_URL  || 'http://localhost:3000'; 
   const API_ENDPOINTS = {
     customers: '/clients'
   };
