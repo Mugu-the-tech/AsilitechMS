@@ -5,7 +5,6 @@ import AuthForm from "../pages/Login";
 import AuthContext from './AuthContext'; 
 import AdminLayout from '../components/layout/AdminLayout';
 import Dashboard from '../pages/DashBoard';
-import Inventory from '../pages/Inventory';
 import Sales from '../pages/Sales';
 import AddVendorComponent from '../vendors/Addvendor';
 import VendorTable from '../vendors/Vendors';
