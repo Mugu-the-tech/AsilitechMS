@@ -59,4 +59,11 @@ export interface Crop {
     organizationId: string;
   }
 
- 
+ export interface Items{
+  id: string;
+  itemName: string;
+  quantity : bigint;
+  remainingquantity:bigint
+  organizationid:string;
+
+ }

@@ -33,49 +33,68 @@ import {
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
-// Client Interface (copied from your provided interface)
-interface Client {
+
+// Items Interface
+export interface Items {
   id: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string;
-  email: string;
-  marketId: string;
-  location: string;
-  farmSize: string;
-  status: string;
-  organizationId: string;
+  itemName: string;
+  quantity: bigint;
+  remainingquantity: bigint;
+  organizationid: string;
 }
 
-// Client Status options for filtering
-const CLIENT_STATUSES = [
-  'ACTIVE',
-  'INACTIVE',
-  'POTENTIAL',
-  'ARCHIVED'
-] ;
+// Quantity Status Categories
+const QUANTITY_STATUSES = [
+  'LOW_STOCK',
+  'IN_STOCK',
+  'OUT_OF_STOCK'
+] as const;
 
 // Status color mapping
-const STATUS_COLORS = {
-  ACTIVE: 'bg-green-100 text-green-800',
-  INACTIVE: 'bg-gray-100 text-gray-800',
-  POTENTIAL: 'bg-yellow-100 text-yellow-800',
-  ARCHIVED: 'bg-red-100 text-red-800'
-} ;
+const QUANTITY_STATUS_COLORS = {
+  LOW_STOCK: 'bg-yellow-100 text-yellow-800',
+  IN_STOCK: 'bg-green-100 text-green-800',
+  OUT_OF_STOCK: 'bg-red-100 text-red-800'
+};
 
-const CustomerTable: React.FC = () => {
-  const [customers, setCustomers] = useState<Client[]>([]);
-  const [filteredCustomers, setFilteredCustomers] = useState<Client[]>([]);
+const InventoryTable: React.FC = () => {
+  const [items, setItems] = useState<Items[]>([]);
+  const [filteredItems, setFilteredItems] = useState<Items[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [customerStatusFilter, setCustomerStatusFilter] = useState<string>('ALL');
+  const [quantityStatusFilter, setQuantityStatusFilter] = useState<string>('ALL');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
+
   // Use BACKEND_URL from .env, fallback to localhost if not set
-   const API_BASE_URL =  import.meta.env.VITE_BACKEND_URL  || 'http://localhost:3000'; 
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
   const API_ENDPOINTS = {
-    customers: '/clients'
+    items: '/items'
+  };
+
+  // Determine Quantity Status
+  const getQuantityStatus = (item: Items): (typeof QUANTITY_STATUSES)[number] => {
+    const remainingQuantity = Number(item.remainingquantity);
+    const totalQuantity = Number(item.quantity);
+    
+    if (remainingQuantity === 0) return 'OUT_OF_STOCK';
+    if (remainingQuantity <= totalQuantity * 0.2) return 'LOW_STOCK';
+    return 'IN_STOCK';
+  };
+
+  // Status Badge Component
+  const QuantityStatusBadge: React.FC<{ item: Items }> = ({ item }) => {
+    const status = getQuantityStatus(item);
+    const colorClass = QUANTITY_STATUS_COLORS[status];
+    
+    return (
+      <span 
+        className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${colorClass}`}
+      >
+        {status.replace('_', ' ').toLowerCase()}
+      </span>
+    );
   };
 
   useEffect(() => {
@@ -95,7 +114,7 @@ const CustomerTable: React.FC = () => {
         return;
       }
       
-      fetchCustomers(organization.id);
+      fetchItems(organization.id);
     } catch (e) {
       console.error('Error parsing organization data:', e);
       setError('Failed to parse organization data. Please log in again.');
@@ -103,7 +122,7 @@ const CustomerTable: React.FC = () => {
     }
   }, []);
 
-  const fetchCustomers = async (orgId: string) => {
+  const fetchItems = async (orgId: string) => {
     try {
       const token = localStorage.getItem('authToken');
       if (!token) {
@@ -112,10 +131,10 @@ const CustomerTable: React.FC = () => {
         return;
       }
 
-      const response = await axios.get<Client[]>(`${API_BASE_URL}${API_ENDPOINTS.customers}`, {
+      const response = await axios.get<Items[]>(`${API_BASE_URL}${API_ENDPOINTS.items}`, {
         params: { 
           organizationId: orgId,
-          includeOnlyOrgClients: true 
+          includeOnlyOrgItems: true 
         },
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -123,18 +142,18 @@ const CustomerTable: React.FC = () => {
         }
       });
 
-      // Filter customers by organization ID
-      const orgSpecificCustomers = response.data.filter(
-        customer => customer.organizationId === orgId
+      // Filter items by organization ID
+      const orgSpecificItems = response.data.filter(
+        item => item.organizationid === orgId
       );
 
-      setCustomers(orgSpecificCustomers);
-      setFilteredCustomers(orgSpecificCustomers);
+      setItems(orgSpecificItems);
+      setFilteredItems(orgSpecificItems);
       setLoading(false);
     } catch (err) { 
-      console.error('Error fetching customers:', err);
+      console.error('Error fetching items:', err);
       if (axios.isAxiosError(err)) {
-        const errorMessage = err.response?.data?.message || 'Failed to fetch customers';
+        const errorMessage = err.response?.data?.message || 'Failed to fetch items';
         setError(errorMessage);
       } else {
         setError('An unexpected error occurred');
@@ -143,44 +162,29 @@ const CustomerTable: React.FC = () => {
     }
   };
 
-  // Status Badge Component with explicit type handling
-  const StatusBadge: React.FC<{ status: (typeof CLIENT_STATUSES)[number] }> = ({ status }) => {
-    // Use type assertion to resolve index access
-    const colorClass = STATUS_COLORS[status as keyof typeof STATUS_COLORS];
-    
-    return (
-      <span 
-        className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${colorClass}`}
-      >
-        {status.toLowerCase()}
-      </span>
-    );
-  };
-
-  // Apply filters whenever search term or customer status filter changes
+  // Apply filters whenever search term or quantity status filter changes
   useEffect(() => {
-    let result = customers;
+    let result = items;
 
-    // Filter by customer status
-    if (customerStatusFilter !== 'ALL') {
-      result = result.filter(customer => customer.status === customerStatusFilter);
+    // Filter by quantity status
+    if (quantityStatusFilter !== 'ALL') {
+      result = result.filter(item => 
+        getQuantityStatus(item) === quantityStatusFilter
+      );
     }
 
     // Filter by search term
     if (searchTerm) {
       const searchTermLower = searchTerm.toLowerCase();
-      result = result.filter(customer => 
-        customer.firstName.toLowerCase().includes(searchTermLower) ||
-        customer.lastName.toLowerCase().includes(searchTermLower) ||
-        customer.email.toLowerCase().includes(searchTermLower) ||
-        customer.phoneNumber.toLowerCase().includes(searchTermLower)
+      result = result.filter(item => 
+        item.itemName.toLowerCase().includes(searchTermLower)
       );
     }
 
-    setFilteredCustomers(result);
-  }, [searchTerm, customerStatusFilter, customers]);
+    setFilteredItems(result);
+  }, [searchTerm, quantityStatusFilter, items]);
 
-  const handleDelete = async (customerId: string) => {
+  const handleDelete = async (itemId: string) => {
     try {
       const token = localStorage.getItem('authToken');
       if (!token) {
@@ -188,19 +192,19 @@ const CustomerTable: React.FC = () => {
         return;
       }
 
-      await axios.delete(`${API_BASE_URL}${API_ENDPOINTS.customers}/${customerId}`, {
+      await axios.delete(`${API_BASE_URL}${API_ENDPOINTS.items}/${itemId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
-      // Remove the deleted customer from the list
-      setCustomers(prev => prev.filter(customer => customer.id !== customerId));
+      // Remove the deleted item from the list
+      setItems(prev => prev.filter(item => item.id !== itemId));
     } catch (err) {
-      console.error('Error deleting customer:', err);
+      console.error('Error deleting item:', err);
       if (axios.isAxiosError(err)) {
-        const errorMessage = err.response?.data?.message || 'Failed to delete customer';
+        const errorMessage = err.response?.data?.message || 'Failed to delete item';
         setError(errorMessage);
       } else {
         setError('An unexpected error occurred');
@@ -208,9 +212,8 @@ const CustomerTable: React.FC = () => {
     }
   };
 
-
-  // Mobile Customer Details Dialog
-  const CustomerDetailsDialog: React.FC<{ customer: Client }> = ({ customer }) => {
+  // Mobile Item Details Dialog
+  const ItemDetailsDialog: React.FC<{ item: Items }> = ({ item }) => {
     return (
       <Dialog>
         <DialogTrigger asChild>
@@ -218,37 +221,29 @@ const CustomerTable: React.FC = () => {
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Customer Details</DialogTitle>
+            <DialogTitle>Item Details</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <span className="text-sm font-medium">ID:</span>
-              <span className="col-span-3 text-sm">{customer.id}</span>
+              <span className="col-span-3 text-sm">{item.id}</span>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <span className="text-sm font-medium">Name:</span>
-              <span className="col-span-3 text-sm">{`${customer.firstName} ${customer.lastName}`}</span>
+              <span className="text-sm font-medium">Item Name:</span>
+              <span className="col-span-3 text-sm">{item.itemName}</span>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <span className="text-sm font-medium">Email:</span>
-              <span className="col-span-3 text-sm">{customer.email}</span>
+              <span className="text-sm font-medium">Total Quantity:</span>
+              <span className="col-span-3 text-sm">{item.quantity.toString()}</span>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <span className="text-sm font-medium">Phone:</span>
-              <span className="col-span-3 text-sm">{customer.phoneNumber}</span>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <span className="text-sm font-medium">Location:</span>
-              <span className="col-span-3 text-sm">{customer.location}</span>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <span className="text-sm font-medium">Farm Size:</span>
-              <span className="col-span-3 text-sm">{customer.farmSize}</span>
+              <span className="text-sm font-medium">Remaining Quantity:</span>
+              <span className="col-span-3 text-sm">{item.remainingquantity.toString()}</span>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <span className="text-sm font-medium">Status:</span>
               <span className="col-span-3 text-sm">
-                <StatusBadge status={customer.status} />
+                <QuantityStatusBadge item={item} />
               </span>
             </div>
           </div>
@@ -261,7 +256,7 @@ const CustomerTable: React.FC = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Customers</CardTitle>
+          <CardTitle>Inventory</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex justify-center items-center h-64">
@@ -275,7 +270,7 @@ const CustomerTable: React.FC = () => {
   return (
     <Card className="w-full max-w-full mx-auto dark:bg-[#1e2024c9]">
       <CardHeader className="flex flex-col sm:flex-row justify-between items-center p-4">
-        <CardTitle className="mb-4 sm:mb-0">Customers</CardTitle>
+        <CardTitle className="mb-4 sm:mb-0">Inventory</CardTitle>
         
         {/* Mobile Filter Toggle */}
         <div className="w-full sm:hidden flex justify-end mb-4">
@@ -291,27 +286,27 @@ const CustomerTable: React.FC = () => {
         {/* Mobile Filters */}
         {isMobileFilterOpen && (
           <div className="w-full sm:hidden flex flex-col space-y-2 mb-4">
-          <Select 
-            value={customerStatusFilter}
-            onValueChange={setCustomerStatusFilter}
-          >
-            <SelectTrigger className="w-[180px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Filter by Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Statuses</SelectItem>
-              {CLIENT_STATUSES.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {status}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select 
+              value={quantityStatusFilter}
+              onValueChange={setQuantityStatusFilter}
+            >
+              <SelectTrigger className="w-[180px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Filter by Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Statuses</SelectItem>
+                {QUANTITY_STATUSES.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status.replace('_', ' ')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             <div className="relative w-full">
               <Input
-                placeholder="Search customers"
+                placeholder="Search items"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8 w-full"
@@ -324,17 +319,18 @@ const CustomerTable: React.FC = () => {
         {/* Desktop Filters */}
         <div className="hidden sm:flex space-x-2">
           <Select 
-            value={customerStatusFilter}
-            onValueChange={setCustomerStatusFilter}
+            value={quantityStatusFilter}
+            onValueChange={setQuantityStatusFilter}
           >
             <SelectTrigger className="w-[180px]">
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Filter by Status" />
             </SelectTrigger>
             <SelectContent>
-              {CLIENT_STATUSES.map((status) => (
+              <SelectItem value="ALL">All Statuses</SelectItem>
+              {QUANTITY_STATUSES.map((status) => (
                 <SelectItem key={status} value={status}>
-                  {status === 'ALL' ? 'All Statuses' : status}
+                  {status.replace('_', ' ')}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -342,7 +338,7 @@ const CustomerTable: React.FC = () => {
 
           <div className="relative">
             <Input
-              placeholder="Search customers"
+              placeholder="Search items"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-8 w-[200px]"
@@ -359,9 +355,9 @@ const CustomerTable: React.FC = () => {
           </Alert>
         )}
 
-        {filteredCustomers.length === 0 ? (
+        {filteredItems.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            No customers found.
+            No items found.
           </div>
         ) : (
           <>
@@ -369,82 +365,71 @@ const CustomerTable: React.FC = () => {
             <Table className="hidden sm:table">
               <TableHeader>
                 <TableRow>
-                  <TableHead className='text-left'>Customer ID</TableHead>
-                  <TableHead className='text-left'>First Name</TableHead>
-                  <TableHead className='text-left'>Last Name</TableHead>
-                  <TableHead className='text-left'>Email</TableHead>
-                  <TableHead className='text-left'>Phone</TableHead>
+                  <TableHead className='text-left'>Item ID</TableHead>
+                  <TableHead className='text-left'>Item Name</TableHead>
+                  <TableHead className='text-left'>Total Quantity</TableHead>
+                  <TableHead className='text-left'>Remaining Quantity</TableHead>
                   <TableHead className='text-left'>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCustomers.map((customer) => (
-                  <TableRow key={customer.id}>
-                    <TableCell className='font-bold text-left'>{customer.id}</TableCell>
-                    <TableCell className="font-medium text-left">{customer.firstName}</TableCell>
-                    <TableCell className="font-medium text-left">{customer.lastName}</TableCell>
-                    <TableCell className='text-left'>{customer.email}</TableCell>
-                    <TableCell className='text-left'>{customer.phoneNumber}</TableCell>
+                {filteredItems.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className='font-bold text-left'>{item.id}</TableCell>
+                    <TableCell className="font-medium text-left">{item.itemName}</TableCell>
+                    <TableCell className='text-left'>{item.quantity.toString()}</TableCell>
+                    <TableCell className='text-left'>{item.remainingquantity.toString()}</TableCell>
                     <TableCell className='text-left'>
-                      <StatusBadge status={customer.status} />
+                      <QuantityStatusBadge item={item} />
                     </TableCell>
                     <TableCell className="text-right space-1">
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        onClick={() => navigate(`/clients/edit/${customer.id}`)}
+                        onClick={() => navigate(`/inventory/edit/${item.id}`)}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        onClick={() => handleDelete(customer.id)}
+                        onClick={() => handleDelete(item.id)}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
                     </TableCell>
                   </TableRow>
                 ))}
-              </TableBody>
-            </Table>
+                </TableBody>
+                </Table>
 
-            {/* Mobile Card View */}
-            <div className="sm:hidden space-y-4">
-              {filteredCustomers.map((customer) => (
-                <Card key={customer.id} className="w-full">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-bold text-[#1812ff]">{customer.id}</span>
-                      <span className="text-sm text-gray-500 capitalize">
-                        {customer.status.toLowerCase()}
-                      </span>
-                    </div>
-                    <div className="mb-2">
-                      <h3 className="font-medium text-lg">{`${customer.firstName} ${customer.lastName}`}</h3>
-                      <p className="text-sm text-gray-600">{customer.email}</p>
-                      <p className="text-sm text-gray-600">{customer.phoneNumber}</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <CustomerDetailsDialog customer={customer} />
+
+                <div className="sm:hidden space-y-4">
+                    {filteredItems.map((item)=>(
+                        <Card key={item.id} className="w-full">
+                             <CardContent className="p-4">
+                             <div className="flex justify-between items-center mb-2">
+
+                             </div>
+                             <div className="flex space-x-2">
+                      <ItemDetailsDialog item={item} />
                       <Button 
                         variant="destructive" 
                         className="w-full"
-                        onClick={() => handleDelete(customer.id)}
+                        onClick={() => handleDelete(item.id)}
                       >
                         <Trash2 className="mr-2 h-4 w-4" /> Delete
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </>
+                             </CardContent>
+                        </Card>
+                    ))}
+                </div>
+                </>
         )}
       </CardContent>
     </Card>
   );
 };
-
-export default CustomerTable;
+export default InventoryTable;

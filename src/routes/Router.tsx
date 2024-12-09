@@ -15,6 +15,9 @@ import MarketTable from '../markets/Market';
 
 import MarketUpdatePage from '../markets/MarketUpdate';
 import CustomerTable from '../customers/Customers';
+import AddCustomerComponent from '../customers/AddCustomer';
+import UpdateCustomerPage from '../customers/UpdateCustomers';
+import InventoryTable from '../inventory/items';
 
 const RouterPage = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -56,8 +59,10 @@ const RouterPage = () => {
           >
             {/* Nested routes inside AdminLayout */}
             <Route index element={<Dashboard />} />
-            <Route path="inventory" element={<Inventory />} />
+            <Route path="inventory" element={<InventoryTable />} />
             <Route path="clients" element={<CustomerTable/>}/>
+            <Route path='/clients/edit/:id' element={<UpdateCustomerPage/>}/>
+            <Route path='/clients/add' element={<AddCustomerComponent/>}/>
              <Route path='sales' element={<Sales/>}/>
             <Route path='vendors/add' element={<AddVendorComponent/>}/>
             <Route path='vendors' element={<VendorTable/>}/>
