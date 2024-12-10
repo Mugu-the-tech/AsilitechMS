@@ -313,6 +313,16 @@ const SideBar = ({
                     {href: "/markets/inactive", label: "Inactive Markets", icon: UserX}
                 ]}
             />
+             <DropdownSideBarItem 
+                label="User Management" 
+                icon={Store}
+                href="/markets"
+                subItems={[
+                    {href: "/createuser", label: "All Markets", icon: Store},
+                    {href: "/markets/add", label: "Add Market", icon: UserPlus},
+                    {href: "/markets/inactive", label: "Inactive Markets", icon: UserX}
+                ]}
+            />
             </div>
 
             {/* Bottom section with theme toggle and logout */}

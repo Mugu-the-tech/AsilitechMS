@@ -17,6 +17,7 @@ import CustomerTable from '../customers/Customers';
 import AddCustomerComponent from '../customers/AddCustomer';
 import UpdateCustomerPage from '../customers/UpdateCustomers';
 import InventoryTable from '../inventory/items';
+import CreateUserForm from '../users/registerUser';
 
 const RouterPage = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -69,6 +70,7 @@ const RouterPage = () => {
             <Route path='markets' element={<MarketTable/>}/>
             <Route path="/markets/add" element={<AddMarketComponent/>}/>
             <Route path="/markets/edit/:id" element={<MarketUpdatePage/>}/>
+            <Route path='/createuser' element={<CreateUserForm/>}/>
           </Route>
           
           {/* Redirect to login for unknown routes */}
