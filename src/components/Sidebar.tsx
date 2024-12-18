@@ -26,7 +26,8 @@ import {
   Store,  // Add item icon
   LogOut,
   Sun,
-  Moon
+  Moon,
+  User
 } from "lucide-react";
 
 const SideBar = ({
@@ -315,12 +316,12 @@ const SideBar = ({
             />
              <DropdownSideBarItem 
                 label="User Management" 
-                icon={Store}
+                icon={User}
                 href="/markets"
                 subItems={[
-                    {href: "/createuser", label: "All Markets", icon: Store},
-                    {href: "/markets/add", label: "Add Market", icon: UserPlus},
-                    {href: "/markets/inactive", label: "Inactive Markets", icon: UserX}
+                    {href: "/createuser", label: "Create User", icon: UserPlus},
+                    {href: "/allusers", label: "All Users", icon: UserPlus},
+                    
                 ]}
             />
             </div>

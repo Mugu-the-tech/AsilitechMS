@@ -234,7 +234,7 @@ const CreateUserForm: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="password">Temporary Password *</Label>
+                  <Label htmlFor="password" className='font-bold'>Temporary Password *</Label>
                   <Input
                     id="password"
                     name="password"
@@ -253,7 +253,7 @@ const CreateUserForm: React.FC = () => {
               {/* Additional Information */}
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="role">User Role *</Label>
+                  <Label htmlFor="role" className='font-bold'>User Role *</Label>
                   <Select 
                     value={formData.role} 
                     onValueChange={handleRoleChange}
