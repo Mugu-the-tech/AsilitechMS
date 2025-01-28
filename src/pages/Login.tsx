@@ -1,18 +1,9 @@
 import React, { useState, FormEvent, useContext } from 'react';
-import { LockOpen, Mail, ShieldCheck, Eye, EyeOff, House } from 'lucide-react';
+import { LockOpen, Mail, ShieldCheck, Eye, EyeOff, House, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuthContext from '../routes/AuthContext';
 import { AuthService } from '../types/AuthService';
-
-const COLORS = {
-  primary: '#3B82F6',  // Updated to a more modern blue
-  secondary: '#60A5FA',
-  background: '#F3F4F6', // Soft gray background
-  text: '#1F2937',
-  accent: '#10B981', // Added a green accent
-  border: '#E5E7EB'
-};
 
 interface AuthInputProps {
   type: 'text' | 'email' | 'password';
@@ -46,17 +37,20 @@ const AuthInput: React.FC<AuthInputProps> = ({
   error
 }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   
   return (
     <div className="mb-4">
       <div 
-        className="flex items-center border-2 rounded-xl transition-all duration-300 focus-within:border-blue-500 focus-within:shadow-md"
-        style={{ 
-          borderColor: error ? '#EF4444' : COLORS.border,
-          backgroundColor: 'white'
-        }}
+        className={`
+          flex items-center
+          bg-white/10 backdrop-blur-md
+          border rounded-xl transition-all duration-300
+          ${isFocused ? 'border-blue-400 shadow-lg shadow-blue-500/20' : 'border-white/20'}
+          ${error ? 'border-red-400' : ''}
+        `}
       >
-        <div className="p-3" style={{ color: COLORS.primary }}>
+        <div className={`p-3 ${isFocused ? 'text-blue-400' : 'text-white/60'}`}>
           <Icon size={20} />
         </div>
         <input
@@ -64,16 +58,16 @@ const AuthInput: React.FC<AuthInputProps> = ({
           name={name}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
-          className="flex-grow p-3 bg-transparent outline-none text-sm"
-          style={{ color: COLORS.text }}
+          className="flex-grow p-3 bg-transparent outline-none text-white placeholder-white/50"
         />
         {type === 'password' && (
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="p-3 hover:bg-gray-100 rounded-full transition-colors"
-            style={{ color: COLORS.primary }}
+            className="p-3 text-white/60 hover:text-white transition-colors"
           >
             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
           </button>
@@ -83,7 +77,7 @@ const AuthInput: React.FC<AuthInputProps> = ({
         <motion.p 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-xs text-red-500 mt-1 pl-2"
+          className="text-xs text-red-300 mt-1 pl-2"
         >
           {error}
         </motion.p>
@@ -96,6 +90,7 @@ const AuthForm: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
   const [isLogin, setIsLogin] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   
   const [loginCredentials, setLoginCredentials] = useState<LoginCredentials>({
     email: '',
@@ -131,6 +126,7 @@ const AuthForm: React.FC = () => {
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
     try {
       const response = await AuthService.login(loginCredentials);
@@ -144,7 +140,8 @@ const AuthForm: React.FC = () => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
       setError(errorMessage);
-      setTimeout(() => setError(''), 5000); 
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -153,6 +150,7 @@ const AuthForm: React.FC = () => {
     setError('');
 
     if (!validateRegisterForm()) return;
+    setIsLoading(true);
 
     try {
       await AuthService.register(registerCredentials);
@@ -161,12 +159,14 @@ const AuthForm: React.FC = () => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
       setError(errorMessage);
-      setTimeout(() => setError(''), 5000); 
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handle2FAVerification = async (e: FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
     try {
       await AuthService.loginWith2FA(loginCredentials, twoFactorToken);
@@ -174,22 +174,23 @@ const AuthForm: React.FC = () => {
       navigate('/dashboard');
     } catch (error) {
       setError(error instanceof Error ? error.message : '2FA verification failed');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const render2FAForm = () => (
-    <div 
-      className="min-h-screen flex items-center justify-center p-4 md:p-6 lg:p-8 bg-gradient-to-br from-blue-50 to-blue-100"
-    >
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,0,0,0.2),rgba(0,0,0,0.5))]" />
+      </div>
+
       <motion.div 
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md p-6 md:p-8 bg-white rounded-2xl shadow-2xl"
+        className="w-full max-w-md p-8 relative bg-white/10 backdrop-blur-lg border border-white/20 rounded-3xl shadow-2xl"
       >
-        <h2 
-          className="text-2xl md:text-3xl text-center mb-6 font-bold"
-          style={{ color: COLORS.primary }}
-        >
+        <h2 className="text-2xl md:text-3xl text-center mb-6 font-bold text-white">
           Two-Factor Authentication
         </h2>
   
@@ -199,7 +200,7 @@ const AuthForm: React.FC = () => {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-center"
+              className="mb-4 p-3 bg-red-500/10 backdrop-blur-sm border border-red-500/20 text-red-200 rounded-lg text-center"
             >
               {error}
             </motion.div>
@@ -217,17 +218,20 @@ const AuthForm: React.FC = () => {
           />
   
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="submit"
-            className="w-full p-3 rounded-xl mt-4 font-bold text-white transition-all duration-300 ease-in-out"
-            style={{
-              backgroundColor: COLORS.primary,
-              backgroundImage: `linear-gradient(to right, ${COLORS.primary}, ${COLORS.secondary})`,
-              boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)'
-            }}
+            disabled={isLoading}
+            className="w-full p-4 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 
+                     hover:from-blue-600 hover:to-blue-700 text-white font-semibold
+                     transform transition-all duration-300 flex items-center justify-center gap-2
+                     disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            Verify
+            {isLoading ? (
+              <Loader2 className="animate-spin" size={20} />
+            ) : (
+              'Verify'
+            )}
           </motion.button>
         </form>
       </motion.div>
@@ -235,18 +239,23 @@ const AuthForm: React.FC = () => {
   );
 
   const renderAuthForm = () => (
-    <div 
-      className="min-h-screen flex items-center justify-center p-4 md:p-6 lg:p-8 bg-gradient-to-br from-blue-50 to-blue-100"
-    >
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,0,0,0.2),rgba(0,0,0,0.5))]" />
+      </div>
+
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-80 h-80 bg-blue-500/30 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-0 -right-40 w-80 h-80 bg-purple-500/30 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 left-20 w-80 h-80 bg-pink-500/30 rounded-full blur-3xl animate-pulse" />
+      </div>
+
       <motion.div 
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md p-6 md:p-8 bg-white rounded-2xl shadow-2xl"
+        className="w-full max-w-md p-8 relative bg-white/10 backdrop-blur-lg border border-white/20 rounded-3xl shadow-2xl"
       >
-        <h2 
-          className="text-3xl text-center mb-6 font-bold"
-          style={{ color: COLORS.primary }}
-        >
+        <h2 className="text-3xl text-center mb-6 font-bold text-white">
           {isLogin ? 'Welcome Back' : 'Create Account'}
         </h2>
 
@@ -256,7 +265,7 @@ const AuthForm: React.FC = () => {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-center"
+              className="mb-4 p-3 bg-red-500/10 backdrop-blur-sm border border-red-500/20 text-red-200 rounded-lg text-center"
             >
               {error}
             </motion.div>
@@ -319,38 +328,38 @@ const AuthForm: React.FC = () => {
           />
 
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="submit"
-            className="w-full p-3 rounded-xl mt-4 font-bold text-white transition-all duration-300 ease-in-out"
-            style={{
-              backgroundColor: COLORS.primary,
-              backgroundImage: `linear-gradient(to right, ${COLORS.primary}, ${COLORS.secondary})`,
-              boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)'
-            }}
+            disabled={isLoading}
+            className="w-full p-4 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 
+                     hover:from-blue-600 hover:to-blue-700 text-white font-semibold
+                     transform transition-all duration-300 flex items-center justify-center gap-2
+                     disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {isLogin ? 'Sign In' : 'Sign Up'}
+            {isLoading ? (
+              <Loader2 className="animate-spin" size={20} />
+            ) : (
+              isLogin ? 'Sign In' : 'Sign Up'
+            )}
           </motion.button>
         </form>
 
-        <div className="text-center mt-6">
-          <p className="text-sm text-gray-600">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <button 
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError('');
-              }}
-              className="text-blue-500 font-semibold hover:underline"
-            >
-              {isLogin ? 'Sign Up' : 'Sign In'}
-            </button>
-          </p>
+        <div className="text-center mt-8">
+          <button 
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError('');
+            }}
+            className="text-white/80 hover:text-white transition-colors duration-300"
+          >
+            {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+          </button>
 
           {isLogin && (
             <button 
               onClick={() => navigate('/forgot-password')}
-              className="mt-3 text-sm text-blue-500 hover:underline"
+              className="block mx-auto mt-4 text-white/60 hover:text-white transition-colors duration-300"
             >
               Forgot Password?
             </button>

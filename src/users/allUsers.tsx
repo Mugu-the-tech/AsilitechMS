@@ -1,149 +1,169 @@
-import React, { useState, useEffect } from 'react';
-import axios, { } from 'axios';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle 
-} from '../components/ui/card';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '../components/ui/table';
-import { Button } from '../components/ui/button';
-import { 
-  Edit, 
-  Trash2, 
-  Users 
-} from 'lucide-react';
-import { Alert, AlertDescription } from '../components/ui/alert';
-import { ScrollArea } from '../components/ui/scroll-area';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
+import { Button } from "../components/ui/button";
+import { Edit, Trash2, Users } from "lucide-react";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { ScrollArea } from "../components/ui/scroll-area";
 import { motion } from "framer-motion";
 
-const enum UserRoles {
-  MEMBER = 'MEMBER',
-  ADMIN = 'ADMIN',
-  OWNER = 'OWNER'
-}
-
 interface User {
-  id: string;
+  id: number;
   email: string;
-  role?: UserRoles | null;
-  organizationId: string;
-  createdAt: string;
+  password?: string;
+  role?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
-// Define a specific error response interface
-interface ErrorResponse {
-  message: string;
+interface Organization {
+  id: number;
+  name: string;
+}
+
+interface OrganizationUser {
+  id: number;
+  user_id: number;
+  organization_id: number;
+  role?: string;
+  user?: User;
 }
 
 const UserManagementTable: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
+  const [organizationUsers, setOrganizationUsers] = useState<
+    OrganizationUser[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentOrganization, setCurrentOrganization] =
+    useState<Organization | null>(null);
 
-  // Use BACKEND_URL from .env, fallback to localhost if not set
-  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
-  const API_ENDPOINTS = {
-    users: '/auth'
-  };
+  const API_BASE_URL =
+    import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    const getOrganizationData = () => {
+      const orgData = localStorage.getItem("organization");
+      if (!orgData) {
+        throw new Error("Organization data not found. Please log in again.");
+      }
       try {
-        const token = localStorage.getItem('authToken');
-        const orgData = localStorage.getItem('organization');
-        
-        if (!orgData) {
-          throw new Error('Organization data not found');
+        return JSON.parse(orgData) as Organization;
+      } catch {
+        throw new Error("Invalid organization data. Please log in again.");
+      }
+    };
+
+    const fetchOrganizationUsers = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          throw new Error(
+            "Authentication token not found. Please log in again."
+          );
         }
 
-        const organization = JSON.parse(orgData);
+        const organization = getOrganizationData();
+        setCurrentOrganization(organization);
 
-        const response = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.users}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          params: {
-            organizationId: organization.id
+        // Fetch organization users from the join table
+        const response = await axios.get<OrganizationUser[]>(
+          `${API_BASE_URL}/organization-users/${organization.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
           }
-        });
-
-        // Ensure only users from the current organization are displayed
-        const filteredUsers = response.data.filter(
-          (user: User) => user.organizationId === organization.id
         );
 
-        // Ensure each user has a valid role
-        const processedUsers = filteredUsers.map((user: User) => ({
-          ...user,
-          role: user.role || UserRoles.MEMBER
-        }));
-
-        setUsers(processedUsers);
+        //console.log("API Response:", response.data);
+        setOrganizationUsers(response.data);
         setLoading(false);
       } catch (err) {
-        // Type-guard for AxiosError
-        if (axios.isAxiosError<ErrorResponse>(err)) {
-          setError(
-            err.response?.data?.message || 
-            err.message || 
-            'Failed to fetch users'
-          );
+        console.error("Error fetching organization users:", err);
+
+        if (axios.isAxiosError(err)) {
+          const errorMessage = err.response?.data?.message || err.message;
+          setError(`Failed to fetch users: ${errorMessage}`);
+
+          if (err.response?.status === 401) {
+            localStorage.clear();
+            window.location.href = "/login";
+          }
         } else {
-          // Handle non-axios errors
-          setError('An unexpected error occurred');
+          setError(`An unexpected error occurred: ${(err as Error).message}`);
         }
         setLoading(false);
       }
     };
 
-    fetchUsers();
+    fetchOrganizationUsers();
   }, []);
 
-  const handleDeleteUser = async (userId: string) => {
+  const handleRemoveUser = async (organizationUserId: number) => {
     try {
-      const token = localStorage.getItem('authToken');
-      await axios.delete(`${API_BASE_URL}/auth/users/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const token = localStorage.getItem("authToken");
 
-      // Remove the deleted user from the state
-      setUsers(users.filter(user => user.id !== userId));
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+
+      // Remove user from organization (not deleting the user)
+      await axios.delete(
+        `${API_BASE_URL}/organization-users/${organizationUserId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setOrganizationUsers(
+        organizationUsers.filter((ou) => ou.id !== organizationUserId)
+      );
+      setError(null);
     } catch (err) {
-      // Type-guard for AxiosError
-      if (axios.isAxiosError<ErrorResponse>(err)) {
+      console.error("Error removing user from organization:", err);
+
+      if (axios.isAxiosError(err)) {
         setError(
-          err.response?.data?.message || 
-          err.message || 
-          'Failed to delete user'
+          `Failed to remove user: ${err.response?.data?.message || err.message}`
         );
       } else {
-        // Handle non-axios errors
-        setError('An unexpected error occurred');
+        setError(
+          `An unexpected error occurred while removing user: ${
+            (err as Error).message
+          }`
+        );
       }
     }
   };
 
-  const renderUserRoleBadge = (role: UserRoles) => {
-    const roleColors = {
-      [UserRoles.MEMBER]: 'bg-blue-100 text-blue-800',
-      [UserRoles.ADMIN]: 'bg-yellow-100 text-yellow-800',
-      [UserRoles.OWNER]: 'bg-green-100 text-green-800'
+  const renderUserRoleBadge = (role: string = "USER") => {
+    const roleColors: Record<string, string> = {
+      USER: "bg-blue-100 text-blue-800",
+      ADMIN: "bg-yellow-100 text-yellow-800",
+      OWNER: "bg-green-100 text-green-800",
     };
 
+    const color = roleColors[role] || roleColors["USER"];
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${roleColors[role]}`}>
-        {role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()}
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${color}`}>
+        {role || "User"}
       </span>
     );
   };
@@ -161,7 +181,7 @@ const UserManagementTable: React.FC = () => {
   return (
     <Card className="w-full max-w-6xl mx-auto shadow-lg bg-white dark:bg-gray-900">
       <CardHeader className="border-b border-gray-200 p-4">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
@@ -169,7 +189,7 @@ const UserManagementTable: React.FC = () => {
         >
           <CardTitle className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white flex items-center">
             <Users className="mr-3 h-6 w-6" />
-            User Management
+            {currentOrganization?.name} - Users ({organizationUsers.length})
           </CardTitle>
         </motion.div>
       </CardHeader>
@@ -187,37 +207,31 @@ const UserManagementTable: React.FC = () => {
               <TableRow>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Created At</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.length === 0 ? (
+              {organizationUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-gray-500">
-                    No users found
+                  <TableCell colSpan={3} className="text-center text-gray-500">
+                    No users found for this organization
                   </TableCell>
                 </TableRow>
               ) : (
-                users.map(user => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      {user.role && renderUserRoleBadge(user.role)}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(user.createdAt).toLocaleDateString()}
-                    </TableCell>
+                organizationUsers.map((orgUser) => (
+                  <TableRow key={orgUser.id}>
+                    <TableCell>{orgUser.user?.email}</TableCell>
+                    <TableCell>{renderUserRoleBadge(orgUser.role)}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button variant="outline" size="sm" className="mr-2">
                         <Edit className="h-4 w-4 mr-2" /> Edit
                       </Button>
-                      <Button 
-                        variant="destructive" 
+                      <Button
+                        variant="destructive"
                         size="sm"
-                        onClick={() => handleDeleteUser(user.id)}
+                        onClick={() => handleRemoveUser(orgUser.id)}
                       >
-                        <Trash2 className="h-4 w-4 mr-2" /> Delete
+                        <Trash2 className="h-4 w-4 mr-2" /> Remove
                       </Button>
                     </TableCell>
                   </TableRow>
